@@ -132,8 +132,16 @@ temp_data_t = session.query(func.min(Measurement.tobs),
                                 func.avg(Measurement.tobs)).\
                                 filter(Measurement.date >= start_dt).\
                                 all()
-temp_data_t[0]                                
+                                
+for temps in temp_data_t:
+    temps_dict = {}
+    temps_dict['min temp'] = temps[0]
+    temps_dict['max temp'] = temps[1]
+    temps_dict['avg temp'] = temps[2]
 
+temps_dict
+#temps_dict
+    
 #####################################################################################
 # FLASK API DESIGN
 #####################################################################################
@@ -208,18 +216,46 @@ Return JSON list of the min avg and max temp for given start or start-end range
 @app.route('/api/v1.0/<start>')
 def temp_data(start):
     
-    # Convert start date to datetime object
-    start_dt = dt.datetime.strptime(start,"%Y-%m-%d")
-    
     # Query for temp data after given start date
     temp_data_q = session.query(func.min(Measurement.tobs),
                                 func.max(Measurement.tobs),
                                 func.avg(Measurement.tobs)).\
                                 filter(Measurement.date >= start).\
                                 all()
+                                
+    # Put results into dictionary                           
+    for temps in temp_data_t:
+        temps_dict = {}
+        temps_dict['min temp'] = temps[0]
+        temps_dict['max temp'] = temps[1]
+        temps_dict['avg temp'] = temps[2]
                             
-    return jsonify(temp_data_q)
+    return jsonify(temps_dict)
+
+@app.route('/api/v1.0/<start>/<end>')
+def temp_data_range(start,end=None):
+    ''' returns temp data for given date range'''
     
+    #If no end date given then run temp_data function
+    if end is None:
+        temp_data(start)
+         
+    # Query for temp data after given start date before end date
+    temp_data_r = session.query(func.min(Measurement.tobs),
+                                func.max(Measurement.tobs),
+                                func.avg(Measurement.tobs)).\
+                                filter(Measurement.date >= start).\
+                                filter(Measurement.date <= end).\
+                                all()
+                                
+    # Put results into dictionary                           
+    for temps in temp_data_r:
+        temps_dict_r = {}
+        temps_dict_r['min temp'] = temps[0]
+        temps_dict_r['max temp'] = temps[1]
+        temps_dict_r['avg temp'] = temps[2]
+                            
+    return jsonify(temps_dict_r)
 
 if __name__ == "__main__":
     app.run(debug=True)
